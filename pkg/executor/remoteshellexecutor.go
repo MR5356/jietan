@@ -40,7 +40,9 @@ func (e *RemoteShellExecutor) Execute(context context.Context, params *api.Execu
 		wg.Add(1)
 		e.hostInfos[host.Id()] = &HostResult{
 			hostInfo: host,
+			log:      make([]string, 0),
 			finish:   false,
+			stderr:   make([]string, 0),
 		}
 		host := host
 		go func() {
