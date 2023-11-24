@@ -82,15 +82,13 @@ func (e *RemoteShellExecutor) getError() map[string]error {
 
 }
 
-func (e *RemoteShellExecutor) getLog() []string {
-	log := make([]string, 0)
+func (e *RemoteShellExecutor) getLog() map[string][]string {
+	log := make(map[string][]string, 0)
 	for _, hostInfo := range e.hostInfos {
-		log = append(log, "------------------")
-		log = append(log, hostInfo.hostInfo.String())
+		log[hostInfo.hostInfo.String()] = hostInfo.log
 		if hostInfo.err != nil {
-			log = append(log, hostInfo.err.Error())
+			log[hostInfo.hostInfo.String()] = append(log[hostInfo.hostInfo.String()], hostInfo.err.Error())
 		}
-		log = append(log, hostInfo.log...)
 	}
 	return log
 }
