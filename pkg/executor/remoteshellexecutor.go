@@ -203,7 +203,7 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 	}()
 
 	logrus.Debugf("cmd: %s", fmt.Sprintf(`chmod +x %s; sh %s %s; rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
-	err = session.Start(fmt.Sprintf(`chmod +x %s; sh %s %s; rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
+	err = session.Start(fmt.Sprintf(`chmod +x %s; %s %s; rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
 	if err != nil {
 		logrus.Errorf("ssh start error: %v", err)
 	}
