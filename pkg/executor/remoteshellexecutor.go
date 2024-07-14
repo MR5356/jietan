@@ -119,11 +119,9 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 	logrus := logrus.WithField("prefix", e.getLogPrefix(hostInfo))
 
 	clientConfig := &ssh.ClientConfig{
-		Timeout: time.Second * 3,
-		User:    hostInfo.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(hostInfo.Passwd),
-		},
+		Timeout:         time.Second * 3,
+		User:            hostInfo.User,
+		Auth:            hostInfo.GetAuthMethods(),
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
