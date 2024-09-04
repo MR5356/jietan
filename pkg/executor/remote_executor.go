@@ -139,6 +139,9 @@ func (e *RemoteExecutor) remoteExecute(context context.Context, hostInfo *api.Ho
 	}
 	defer scp.Close()
 	scriptName := fmt.Sprintf("/tmp/%s-%d", common.PackageName, time.Now().UnixMilli())
+
+	logrus.Debugf("transfer script to remote file: %s", scriptName)
+
 	target, err := scp.Create(scriptName)
 	if err != nil {
 		logrus.Errorf("sftp open error: %v", err)
@@ -148,7 +151,6 @@ func (e *RemoteExecutor) remoteExecute(context context.Context, hostInfo *api.Ho
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("transfer script to remote file: %s", scriptName)
 
 	err = target.Close()
 	if err != nil {
