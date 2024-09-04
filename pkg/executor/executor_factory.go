@@ -9,7 +9,7 @@ func GetExecutor(name string) Executor {
 	case "shell":
 		return &ShellExecutor{}
 	case "remote":
-		return &RemoteShellExecutor{}
+		return &RemoteExecutor{}
 	default:
 		return nil
 	}
@@ -19,6 +19,6 @@ func GetExecutor(name string) Executor {
 //	executorFactory = map[string]Executor{
 //		"command": &CommandExecutor{},
 //		"shell":   &ShellExecutor{},
-//		"remote":  &RemoteShellExecutor{},
+//		"remote":  &RemoteExecutor{},
 //	}
 //}

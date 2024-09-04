@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-type RemoteShellExecutor struct {
+type RemoteExecutor struct {
 	log       []string
 	hostInfos map[string]*HostResult
 }
@@ -29,7 +29,7 @@ type HostResult struct {
 	err      error
 }
 
-func (e *RemoteShellExecutor) Execute(context context.Context, params *api.ExecuteParams) *api.ExecuteResult {
+func (e *RemoteExecutor) Execute(context context.Context, params *api.ExecuteParams) *api.ExecuteResult {
 	hosts := params.GetParam(api.ExecuteParamHosts).([]*api.HostInfo)
 	script := params.GetScript()
 	ps := params.GetParams()
@@ -63,7 +63,7 @@ func (e *RemoteShellExecutor) Execute(context context.Context, params *api.Execu
 	return result
 }
 
-func (e *RemoteShellExecutor) GetResult(field api.ResultField, params interface{}) interface{} {
+func (e *RemoteExecutor) GetResult(field api.ResultField, params interface{}) interface{} {
 	switch field {
 	case api.ResultFieldLog:
 		return e.getLog()
@@ -75,7 +75,7 @@ func (e *RemoteShellExecutor) GetResult(field api.ResultField, params interface{
 	return nil
 }
 
-func (e *RemoteShellExecutor) getError() map[string]error {
+func (e *RemoteExecutor) getError() map[string]error {
 	result := make(map[string]error)
 	for _, hostInfo := range e.hostInfos {
 		result[hostInfo.hostInfo.String()] = hostInfo.err
@@ -84,7 +84,7 @@ func (e *RemoteShellExecutor) getError() map[string]error {
 
 }
 
-func (e *RemoteShellExecutor) getLog() map[string][]string {
+func (e *RemoteExecutor) getLog() map[string][]string {
 	log := make(map[string][]string, len(e.hostInfos))
 	for _, hostInfo := range e.hostInfos {
 		log[hostInfo.hostInfo.String()] = hostInfo.log
@@ -95,7 +95,7 @@ func (e *RemoteShellExecutor) getLog() map[string][]string {
 	return log
 }
 
-func (e *RemoteShellExecutor) getIncrLog(start int) *api.IncrementalLog {
+func (e *RemoteExecutor) getIncrLog(start int) *api.IncrementalLog {
 	if start > len(e.log) {
 		start = len(e.log)
 	}
@@ -115,7 +115,7 @@ func (e *RemoteShellExecutor) getIncrLog(start int) *api.IncrementalLog {
 	}
 }
 
-func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *api.HostInfo, script string, params ...string) error {
+func (e *RemoteExecutor) remoteExecute(context context.Context, hostInfo *api.HostInfo, script string, params ...string) error {
 	logrus := logrus.WithField("prefix", e.getLogPrefix(hostInfo))
 
 	clientConfig := &ssh.ClientConfig{
@@ -138,7 +138,7 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 		return err
 	}
 	defer scp.Close()
-	scriptName := fmt.Sprintf("/tmp/%s-%d.sh", common.PackageName, time.Now().UnixMilli())
+	scriptName := fmt.Sprintf("/tmp/%s-%d", common.PackageName, time.Now().UnixMilli())
 	target, err := scp.Create(scriptName)
 	if err != nil {
 		logrus.Errorf("sftp open error: %v", err)
@@ -148,7 +148,7 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 	if err != nil {
 		return err
 	}
-	logrus.Infof("transfer script to remote file: %s", scriptName)
+	logrus.Debugf("transfer script to remote file: %s", scriptName)
 
 	err = target.Close()
 	if err != nil {
@@ -195,20 +195,20 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 			s := enc.ConvertString(strings.ReplaceAll(readStr, "\n", ""))
 			e.hostInfos[hostInfo.Id()].log = append(e.hostInfos[hostInfo.Id()].log, s)
 			e.hostInfos[hostInfo.Id()].stderr = append(e.hostInfos[hostInfo.Id()].stderr, s)
-			e.log = append(e.log, fmt.Sprintf("%s %s", s))
+			e.log = append(e.log, fmt.Sprintf("%s", s))
 			logrus.Debugf("%s", s)
 		}
 	}()
 
-	logrus.Debugf("cmd: %s", fmt.Sprintf(`chmod +x %s; sh %s %s; rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
-	err = session.Start(fmt.Sprintf(`chmod +x %s; %s %s; rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
+	logrus.Debugf("cmd: %s", fmt.Sprintf(`chmod +x %s && %s %s && rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
+	err = session.Start(fmt.Sprintf(`chmod +x %s && %s %s && rm -f %s`, scriptName, scriptName, strings.Join(params, " "), scriptName))
 	if err != nil {
 		logrus.Errorf("ssh start error: %v", err)
 	}
 	finish := make(chan struct{})
 	go func() {
 		defer func() {
-			logrus.Infof("command execution completed")
+			logrus.Debugf("command execution completed")
 			finish <- struct{}{}
 		}()
 		wg.Wait()
@@ -231,6 +231,6 @@ func (e *RemoteShellExecutor) remoteExecute(context context.Context, hostInfo *a
 	}
 }
 
-func (e *RemoteShellExecutor) getLogPrefix(hostInfo *api.HostInfo) string {
-	return fmt.Sprintf("RemoteShellExecutor-%s@%s:%d", hostInfo.User, hostInfo.Host, hostInfo.Port)
+func (e *RemoteExecutor) getLogPrefix(hostInfo *api.HostInfo) string {
+	return fmt.Sprintf("RemoteExecutor-%s@%s:%d", hostInfo.User, hostInfo.Host, hostInfo.Port)
 }
